@@ -330,28 +330,6 @@ app.post('/addFragrance', checkAuthenticated, checkAdmin, (req, res) => {
   );
 });
 
-app.get('/updateFragrance/:id',checkAuthenticated, checkAdmin, (req,res) => {
-    const fragranceId = req.params.id;
-    const sql = 'SELECT * FROM fragrances WHERE fragranceId = ?';
-
-    // Fetch data from MySQL based on the fragrance ID
-    pool.query(sql , [fragranceId], (error, results) => {
-        if (error) {
-            console.error(error);
-            return res.status(500).send("Database error");
-        }
-
-        // Check if any fragrance with the given ID was found
-        if (results.length > 0) {
-            // Render HTML page with the fragrance data
-            res.render('updateFragrance', { fragrance: results[0] });
-        } else {
-            // If no fragrance with the given ID was found, render a 404 page or handle it accordingly
-            res.status(404).send('Fragrance not found');
-        }
-    });
-});
-
 app.post('/updateFragrance/:id', checkAuthenticated, checkAdmin,(req, res) => {
     const fragranceId = req.params.id;
     const { name, quantity, price, description, imageUrl, currentImage } = req.body;
