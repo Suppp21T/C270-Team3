@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "connect-flash": "^0.1.1",
-    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
@@ -28,6 +27,7 @@
   "homepage": "https://github.com/Suppp21T/C270-Team3#readme",
   "description": "",
   "devDependencies": {
+    "dotenv": "^17.2.3",
     "jest": "^30.2.0",
     "supertest": "^7.2.2"
   }

@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: '.env.test' });
 //This pool is shared by all test files during the test run
 const { pool } = require("../app");
 

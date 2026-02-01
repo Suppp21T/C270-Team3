@@ -4,6 +4,7 @@ node_modules/.package-lock.json
 
 # Environment variables (API keys, DB credentials)
 .env
+.env.test
 
 # Log files
 npm-debug.log*
