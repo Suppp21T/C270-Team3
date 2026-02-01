@@ -1,3 +1,4 @@
+require('dotenv').config();
 //This pool is shared by all test files during the test run
 const { pool } = require("../app");
 
