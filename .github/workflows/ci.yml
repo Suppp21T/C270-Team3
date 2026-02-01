@@ -26,30 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Debug DB env
-        env:
-          NODE_ENV: test
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-        run: |
-          node -e "console.log('HOST=', JSON.stringify(process.env.DB_HOST));"
-          node -e "console.log('PORT=', JSON.stringify(process.env.DB_PORT));"
-          node -e "console.log('USER=', JSON.stringify(process.env.DB_USER));"
-          node -e "console.log('NAME=', JSON.stringify(process.env.DB_NAME));"
-          node -e "console.log('PASS SET=', !!process.env.DB_PASS);"
-          node -e "require('dns').lookup((process.env.DB_HOST||'').trim(), (e,a,f)=>console.log('DNS=', e?e.message:'OK', a, f));"
-
       - name: Run tests
         env:
           NODE_ENV: test
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
-          DB_NAME: ${{ secrets.DB_NAME }}
         run: npm test
 
       - name: Build (if present)

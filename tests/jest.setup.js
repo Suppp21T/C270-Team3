@@ -1,7 +1,5 @@
-// Load test env vars locally only; CI uses GitHub Secrets instead
-if (!process.env.CI) {
-  require('dotenv').config({ path: '.env.test' });
-}
+require('dotenv').config();
+//This pool is shared by all test files during the test run
 const { pool } = require("../app");
 
 //This runs once after all test files have finished and closes all db connections opened by this test run
