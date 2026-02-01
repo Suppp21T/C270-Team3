@@ -24,14 +24,14 @@ const upload = multer({ storage: storage });
 const fs = require('fs');
 
 const pool = mysql.createPool({
-  host: (process.env.DB_HOST || "").trim(),
-  port: Number(String(process.env.DB_PORT || "3306").trim()),
-  user: (process.env.DB_USER || "").trim(),
-  password: (process.env.DB_PASS || "").trim(),
-  database: (process.env.DB_NAME || "").trim(),
-  waitForConnections: true,
-  connectionLimit: 3,
-  queueLimit: 0
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 // Health check endpoint for CI/CD and orchestration
