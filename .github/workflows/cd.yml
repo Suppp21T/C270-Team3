@@ -74,10 +74,10 @@ jobs:
           ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
           
           # Deploy
-          scp -r deploy/* deploy@:$DEPLOY_PATH/ || exit 1
+          scp -i ~/.ssh/deploy_key -r deploy/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/ || exit 1
           
           # Restart app
-          ssh deploy "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app" || exit 1
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app" || exit 1
 
       - name: Health check
         if: success()
