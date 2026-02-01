@@ -18,6 +18,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: false  # Disabled until GitHub secrets are configured
+    permissions:
+      contents: read
+      statuses: write
     
     steps:
       - name: Checkout code
@@ -29,10 +32,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install
-
-      - name: Install production dependencies only
-        run: npm install --production
+        run: npm ci
 
       - name: Create deployment package
         run: |
@@ -40,9 +40,12 @@ jobs:
           cp -r public/ deploy/
           cp -r views/ deploy/
           cp app.js deploy/
+          cp server.js deploy/
           cp package.json deploy/
           cp package-lock.json deploy/
           cp README.md deploy/
+          if [ -f Dockerfile ]; then cp Dockerfile deploy/; fi
+          if [ -f docker-compose.yml ]; then cp docker-compose.yml deploy/; fi
 
       - name: Deploy to production
         env:
@@ -63,21 +66,21 @@ jobs:
           scp -i ~/.ssh/deploy_key -r deploy/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
           
           # Restart application on remote server
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && npm install && pm2 restart app || pm2 start app.js --name app"
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app"
 
       - name: Health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '3000' }}
         run: |
           sleep 5
-          # Replace with your actual application URL
-          curl -f http://${{ secrets.DEPLOY_HOST }} || exit 1
+          curl -f http://$DEPLOY_HOST:$DEPLOY_PORT/ || exit 1
 
       - name: Notify deployment status
         if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const status = '${{ job.status }}';
-            const message = status === 'success' 
-              ? '✅ Deployment successful!' 
-              : '❌ Deployment failed!';
-            console.log(message);
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
