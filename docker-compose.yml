@@ -1,0 +1,11 @@
+services:
+  perfume-app:
+    build: .
+    container_name: perfume-website-container
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./public/images:/app/public/images
+    restart: always
