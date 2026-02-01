@@ -49,12 +49,35 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
+          # Verify secrets are set
+          if [ -z "$DEPLOY_KEY" ] || [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ] || [ -z "$DEPLOY_PATH" ]; then
+            echo "❌ Missing required secrets!"
+            exit 1
+          fi
+          
+          # Setup SSH
           mkdir -p ~/.ssh
           echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
-          scp -i ~/.ssh/deploy_key -r deploy/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app"
+          
+          # Configure SSH
+          cat >> ~/.ssh/config << EOF
+          Host deploy
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+          
+          # Add host key
+          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+          
+          # Deploy
+          scp -r deploy/* deploy@:$DEPLOY_PATH/ || exit 1
+          
+          # Restart app
+          ssh deploy "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app" || exit 1
 
       - name: Health check
         if: success()
