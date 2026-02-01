@@ -1,4 +1,3 @@
-require('dotenv').config();
 //This pool is shared by all test files during the test run
 
 process.env.NODE_ENV = 'test';
