@@ -1,0 +1,18 @@
+steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      
+      # Inject the variables ONLY for the test step
+      - name: Run Tests
+        env:
+          DB_HOST: localhost
+          DB_USER: root
+          DB_PASS: test_password
+          DB_NAME: test_db
+          DB_PORT: 3306
+          PORT: 3000
+        run: npm test

@@ -23,15 +23,17 @@ const upload = multer({ storage: storage });
 
 const fs = require('fs');
 
+console.log("DB_USER=", process.env.DB_USER, "DB_PASS=", process.env.DB_PASS ? "SET" : "MISSING");
+
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+  host: process.env.DB_HOST || 'fh6-v0.h.filess.io',
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 61002,
+  user: process.env.DB_USER || 'C270_Perfume_tastestill',
+  password: process.env.DB_PASS || '0cb1e8502b416ca311f34a5d3a075728e08ddb13',
+  database: process.env.DB_NAME || 'C270_Perfume_tastestill',
+  waitForConnections: true,
+  connectionLimit: 2,
+  queueLimit: 0
 });
 
 // Health check endpoint for CI/CD and orchestration
@@ -111,33 +113,6 @@ app.use((req, res, next) => {
 // Define routes
 app.get('/',  (req, res) => {
     res.render('index', {user: req.session.user} );
-});
-
-app.get('/inventory', checkAuthenticated, checkAdmin, (req, res) => {
-    const search = req.query.search || '';
-    const searchTerm = '%' + search + '%';
-    const query = 'SELECT * FROM fragrances WHERE fragranceName LIKE ?';
-
-    pool.query(query, [searchTerm], (error, results) => {
-        if (error) {
-            console.error("Error loading inventory page:", error);
-            return res.status(500).send("Error loading shopping page");
-        }
-
-        console.log("User session:", req.session.user);         
-        console.log("Fragrance results:", results);             
-
-        try {
-            res.render('inventory', {
-                user: req.session.user,
-                fragrances: results,
-                search: search
-            });
-        } catch (renderErr) {
-            console.error("Render error:", renderErr);         
-            res.status(500).send("Error rendering inventory page");
-        }
-    });
 });
 
 app.get('/register', (req, res) => {
@@ -299,6 +274,33 @@ app.get('/fragrance/:id', checkAuthenticated, (req, res) => {
     });
 });
 
+app.get('/inventory', checkAuthenticated, checkAdmin, (req, res) => {
+    const search = req.query.search || '';
+    const searchTerm = '%' + search + '%';
+    const query = 'SELECT * FROM fragrances WHERE fragranceName LIKE ?';
+
+    pool.query(query, [searchTerm], (error, results) => {
+        if (error) {
+            console.error("Error loading inventory page:", error);
+            return res.status(500).send("Error loading shopping page");
+        }
+
+        console.log("User session:", req.session.user);         
+        console.log("Fragrance results:", results);             
+
+        try {
+            res.render('inventory', {
+                user: req.session.user,
+                fragrances: results,
+                search: search
+            });
+        } catch (renderErr) {
+            console.error("Render error:", renderErr);         
+            res.status(500).send("Error rendering inventory page");
+        }
+    });
+});
+
 app.get('/addFragrance', checkAuthenticated, checkAdmin, (req, res) => {
     res.render('addFragrance', {user: req.session.user } ); 
 });
@@ -388,6 +390,7 @@ app.post('/remove-from-cart/:id', checkAuthenticated, (req, res) => {
 
   res.redirect('/cart');
 });
+
 
 //Export express app for Jest/Supertest, server.js and MySQL pool
 // - app is used by Supertest to simulate requests

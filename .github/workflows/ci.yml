@@ -6,24 +6,22 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: .   
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: npm
-          cache-dependency-path: package-lock.json  
+          node-version: 20
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -40,4 +38,3 @@ jobs:
         
       - name: Build (if you have build script)
         run: npm run build --if-present
-        
