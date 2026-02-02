@@ -6,6 +6,6 @@ const { app } = require("../app"); //<- load app.js (the app) here
 // Health check endpoint tests
 test("Health endpoint returns status OK", async () => {
   const res = await request(app).get("/health");
-  expect(res.statusCode).toBe(200);
+  expect(res.status).toBe(200);
   expect(res.body.status).toBe("OK");
 });
