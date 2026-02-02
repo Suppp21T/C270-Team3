@@ -115,33 +115,6 @@ app.get('/',  (req, res) => {
     res.render('index', {user: req.session.user} );
 });
 
-app.get('/inventory', checkAuthenticated, checkAdmin, (req, res) => {
-    const search = req.query.search || '';
-    const searchTerm = '%' + search + '%';
-    const query = 'SELECT * FROM fragrances WHERE fragranceName LIKE ?';
-
-    pool.query(query, [searchTerm], (error, results) => {
-        if (error) {
-            console.error("Error loading inventory page:", error);
-            return res.status(500).send("Error loading shopping page");
-        }
-
-        console.log("User session:", req.session.user);         
-        console.log("Fragrance results:", results);             
-
-        try {
-            res.render('inventory', {
-                user: req.session.user,
-                fragrances: results,
-                search: search
-            });
-        } catch (renderErr) {
-            console.error("Render error:", renderErr);         
-            res.status(500).send("Error rendering inventory page");
-        }
-    });
-});
-
 app.get('/register', (req, res) => {
     res.render('register', { messages: req.flash('error'), formData: req.flash('formData')[0] });
 });
@@ -301,6 +274,33 @@ app.get('/fragrance/:id', checkAuthenticated, (req, res) => {
     });
 });
 
+app.get('/inventory', checkAuthenticated, checkAdmin, (req, res) => {
+    const search = req.query.search || '';
+    const searchTerm = '%' + search + '%';
+    const query = 'SELECT * FROM fragrances WHERE fragranceName LIKE ?';
+
+    pool.query(query, [searchTerm], (error, results) => {
+        if (error) {
+            console.error("Error loading inventory page:", error);
+            return res.status(500).send("Error loading shopping page");
+        }
+
+        console.log("User session:", req.session.user);         
+        console.log("Fragrance results:", results);             
+
+        try {
+            res.render('inventory', {
+                user: req.session.user,
+                fragrances: results,
+                search: search
+            });
+        } catch (renderErr) {
+            console.error("Render error:", renderErr);         
+            res.status(500).send("Error rendering inventory page");
+        }
+    });
+});
+
 app.get('/addFragrance', checkAuthenticated, checkAdmin, (req, res) => {
     res.render('addFragrance', {user: req.session.user } ); 
 });
@@ -390,6 +390,7 @@ app.post('/remove-from-cart/:id', checkAuthenticated, (req, res) => {
 
   res.redirect('/cart');
 });
+
 
 //Export express app for Jest/Supertest, server.js and MySQL pool
 // - app is used by Supertest to simulate requests
