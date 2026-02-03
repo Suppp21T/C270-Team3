@@ -1,97 +1,31 @@
-name: CD - Deploy to Production
+name: CD - Deploy to Swarm (Docker Desktop)
 
 on:
-  push:
-    branches:
-      - main
   workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+    workflows: ["CI/CD - Test, Build, Push Docker Image"]
+    types: [completed]
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    if: false  # Disabled until GitHub secrets are configured
-    permissions:
-      contents: read
-    
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    env:
+      IMAGE_NAME: caffeinatedkatze/perfume-site
+      SERVICE_NAME: c270web
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Create deployment package
-        run: |
-          mkdir -p deploy
-          cp -r public/ deploy/
-          cp -r views/ deploy/
-          cp app.js deploy/
-          cp server.js deploy/
-          cp package.json deploy/
-          cp package-lock.json deploy/
-          cp README.md deploy/
-          if [ -f Dockerfile ]; then cp Dockerfile deploy/; fi
-          if [ -f docker-compose.yml ]; then cp docker-compose.yml deploy/; fi
-
-      - name: Deploy to production
+      - name: Docker login
+        run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
         env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          # Verify secrets are set
-          if [ -z "$DEPLOY_KEY" ] || [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ] || [ -z "$DEPLOY_PATH" ]; then
-            echo "❌ Missing required secrets!"
-            exit 1
-          fi
-          
-          # Setup SSH
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          
-          # Configure SSH
-          cat >> ~/.ssh/config << EOF
-          Host deploy
-            HostName $DEPLOY_HOST
-            User $DEPLOY_USER
-            IdentityFile ~/.ssh/deploy_key
-            StrictHostKeyChecking accept-new
-            UserKnownHostsFile ~/.ssh/known_hosts
-          EOF
-          
-          # Add host key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-          
-          # Deploy
-          scp -i ~/.ssh/deploy_key -r deploy/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/ || exit 1
-          
-          # Restart app
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && npm ci --production && pm2 restart app || pm2 start server.js --name app" || exit 1
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Health check
-        if: success()
+      - name: Deploy commit image to Swarm
+        run: |
+          echo "Deploying SHA: $SHA"
+          docker pull $IMAGE_NAME:$SHA
+          docker service update --image $IMAGE_NAME:$SHA $SERVICE_NAME
+          docker service ps $SERVICE_NAME --no-trunc
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-        run: |
-          sleep 5
-          curl -f http://$DEPLOY_HOST:3000 || exit 1
-
-      - name: Notify deployment
-        if: always()
-        run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-          fi
+          SHA: ${{ github.event.workflow_run.head_sha }}
