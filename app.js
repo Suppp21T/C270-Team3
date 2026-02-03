@@ -36,14 +36,19 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Health check endpoint for CI/CD and orchestration
+// Liveness check - app is running
 app.get('/health', (req, res) => {
+  return res.status(200).json({ status: 'OK' });
+});
+
+// Readiness check - app can serve traffic (DB reachable)
+app.get('/health/ready', (req, res) => {
   pool.query('SELECT 1', (err) => {
     if (err) {
-      console.error('Health check failed:', err.message);
-      return res.status(500).json({ status: 'ERROR' });
+      console.error('Readiness check failed:', err.message);
+      return res.status(500).json({ status: 'NOT_READY' });
     }
-    return res.status(200).json({ status: 'OK' });
+    return res.status(200).json({ status: 'READY' });
   });
 });
 
