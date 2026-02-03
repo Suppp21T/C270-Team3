@@ -1,5 +1,5 @@
 // Start server for localhost browser testing
-
+require("dotenv").config();
 const  {app} = require("./app"); //<- load app.js (the app) here
 
 const PORT = process.env.PORT || 3000; 

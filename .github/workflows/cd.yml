@@ -5,30 +5,37 @@ on:
     workflows: ["CI/CD - Test, Build, Push Docker Image"]
     types: [completed]
 
-
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: |
       github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'testbranch'
 
     env:
       IMAGE_NAME: caffeinatedkatze/perfume-site
       SERVICE_NAME: c270web
+      SHA: ${{ github.event.workflow_run.head_sha }}
 
     steps:
-      - name: Docker login
-        run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      - name: Setup SSH key
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Deploy commit image to Swarm
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          echo "Deploying SHA: $SHA"
-          docker pull $IMAGE_NAME:$SHA
-          docker service update --image $IMAGE_NAME:$SHA $SERVICE_NAME
-          docker service ps $SERVICE_NAME --no-trunc
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy on Swarm manager
         env:
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" "\
+            docker pull $IMAGE_NAME:$SHA && \
+            docker service update --image $IMAGE_NAME:$SHA $SERVICE_NAME && \
+            docker service ps $SERVICE_NAME --no-trunc \
+          "
