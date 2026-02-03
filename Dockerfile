@@ -20,3 +20,12 @@ EXPOSE 3000
 
 # 7. Use server.js because that’s where your app.listen is!
 CMD ["node", "server.js"]
+
+FROM node:20
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+CMD ["npm", "test"]
