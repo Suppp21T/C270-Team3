@@ -2,9 +2,9 @@ name: CI/CD - Test, Build, Push Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "testbranch" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "testbranch" ]
 
 permissions:
   contents: read
