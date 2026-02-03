@@ -1,4 +1,4 @@
-name: CI (Docker)
+name: CI (Docker Build, Test & Push)
 
 on:
   push:
@@ -17,10 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 1. Build Docker image
       - name: Build Docker image
         run: docker build -t c270-team3:test .
 
-      - name: Run tests inside Docker container
+      # 2. Run tests inside Docker container
+      - name: Run tests in Docker
         run: |
           docker run --rm \
             -e NODE_ENV=test \
@@ -30,3 +32,18 @@ jobs:
             -e DB_NAME=${{ secrets.DB_NAME }} \
             -e DB_PORT=${{ secrets.DB_PORT }} \
             c270-team3:test
+
+      # 3. Login to Docker Hub
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+            -u "${{ secrets.DOCKER_USERNAME }}" \
+            --password-stdin
+
+      # 4. Tag Docker image
+      - name: Tag Docker image
+        run: docker tag c270-team3:test ${{ secrets.DOCKER_USERNAME }}/c270-team3:test
+
+      # 5. Push Docker image
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/c270-team3:test
